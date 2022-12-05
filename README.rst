@@ -87,6 +87,31 @@ If ``headers="firstrow"``, then the first row of data is used::
     Alice      24
     Bob        19
 
+When the data is a list of dict, ``headers="firstrow"`` can also be 
+used to assign different column names to each corresponding dict key:
+
+        >>> print tabulate([{"name": "Name", "age": "Age"}, 
+                            {"name": "Alice", "age": 24},
+                            {"name": "Bob", "age": 19}],
+        ...                headers="firstrow")
+    Name      Age
+    ------  -----
+    Alice      24
+    Bob        19
+
+Furthermore with a list of dict, you can also specify ``headers`` as 
+a dict (similar to the example above), or as a list of keys. Either way,
+the specified keys can be a subset of all the keys present across the 
+dataset:
+
+        >>> print tabulate([{"foo": 1, "bar": 2},
+                            {"foo": 3, "bar": 4, "baz": 5}],
+        ...                headers=["bar","foo"])
+    bar    foo
+    -----  -----
+        2      1
+        4      3
+
 
 If ``headers="keys"``, then the keys of a dictionary/dataframe, or
 column indices are used. It also works for NumPy record arrays and
