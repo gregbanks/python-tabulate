@@ -17,6 +17,7 @@ if python_version_tuple()[0] < "3":
     _float_type = float
     _text_type = unicode
     _binary_type = str
+    _string_type = basestring
 else:
     from itertools import zip_longest as izip_longest
     from functools import reduce, partial
@@ -25,6 +26,7 @@ else:
     _float_type = float
     _text_type = str
     _binary_type = bytes
+    _string_type = str
 
 
 __all__ = ["tabulate", "tabulate_formats", "simple_separated_format"]
@@ -527,24 +529,31 @@ def _normalize_tabular_data(tabular_data, headers):
         elif (len(rows) > 0
               and isinstance(rows[0], dict)):
             # dict or OrderedDict
-            uniq_keys = set() # implements hashed lookup
-            keys = [] # storage for set
+            
             if headers == "firstrow":
-                firstdict = rows[0] if len(rows) > 0 else {}
-                keys.extend(firstdict.keys())
-                uniq_keys.update(keys)
+                headers = rows[0] if len(rows) > 0 else {}
                 rows = rows[1:]
-            for row in rows:
-                for k in row.keys():
-                    #Save unique items in input order
-                    if k not in uniq_keys:
-                        keys.append(k)
-                        uniq_keys.add(k)
+
+            if isinstance(headers,_string_type):
+                # list unique keys in input order
+                uniq_keys = set() # implements hashed lookup
+                keys = [] # storage for set
+                for row in rows:
+                    for k in row.keys():
+                        if k not in uniq_keys:
+                            keys.append(k)
+                            uniq_keys.add(k)
+            elif hasattr(headers,'keys') and hasattr(headers,'values'):
+                # dict-like { key => header name }
+                keys = list(headers.keys())
+                headers = list(headers.values())
+            else:
+                # list-like [key1, key2, ...]
+                keys = list(headers) 
+
             if headers == 'keys':
                 headers = keys
-            elif headers == "firstrow" and len(rows) > 0:
-                headers = [firstdict.get(k, k) for k in keys]
-                headers = list(map(_text_type, headers))
+                
             rows = [[row.get(k) for k in keys] for row in rows]
         elif headers == "keys" and len(rows) > 0:
             # keys are column indices
@@ -560,10 +569,10 @@ def _normalize_tabular_data(tabular_data, headers):
 
     # pad with empty headers for initial columns if necessary
     if headers and len(rows) > 0:
-       nhs = len(headers)
+       nhead = len(headers)
        ncols = len(rows[0])
-       if nhs < ncols:
-           headers = [""]*(ncols - nhs) + headers
+       if nhead != ncols:
+           raise RuntimeError('Number of headers and columns do not match.')
 
     return rows, headers
 
